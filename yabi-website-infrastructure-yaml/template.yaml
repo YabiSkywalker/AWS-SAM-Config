@@ -1,0 +1,132 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  yabi-website-infrastructure-yaml
+
+  Sample SAM Template for yabi-website-infrastructure-yaml
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 3
+    MemorySize: 128
+
+Resources:
+  MyWebsite:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: PublicRead
+      BucketName: cloud-resume-yabi
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  MyBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket:
+        Ref: 'MyWebsite'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource:
+              Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: 'MyWebsite'
+                  - '/*'
+
+  #Hosted zone was made for a google domain name 
+  MyHostedZone: 
+    Type: 'AWS::Route53::HostedZone'
+    Properties: 
+      Name: yabi.dev 
+ #Record set for www.yabi.dev
+  MyRoute53Record: 
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref 'MyHostedZone'
+      RecordSets: 
+        - Name: www.yabi.dev
+          Type: A 
+          AliasTarget: 
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt cloudfrontdistribution.DomainName  
+
+ #Record set for yabi.dev
+  MyOtherRoute53Record: 
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !Ref 'MyHostedZone'
+      RecordSets: 
+        - Name: yabi.dev
+          Type: A 
+          AliasTarget: 
+            HostedZoneId: Z2FDTNDATAQYW2
+            DNSName: !GetAtt cloudfrontdistribution.DomainName   
+
+#manually added config settings to cloudfront && certificate manager 
+#CNAME && Certificates for cloudfront configured manually through console. The domain name IS pointing to this cloudfront distribution, which then points to the S3 bucket where the files rest. 
+  cloudfrontdistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      DistributionConfig: 
+        Aliases:
+          - www.yabi.dev
+          - yabi.dev
+        DefaultCacheBehavior:
+          ViewerProtocolPolicy: redirect-to-https
+          TargetOriginId: cloud-resume-yabi.s3-website.us-east-2.amazonaws.com
+          DefaultTTL: 0 
+          MinTTL: 0 
+          MaxTTL: 0 
+          ForwardedValues: 
+            QueryString: false 
+        Origins:
+          - DomainName: cloud-resume-yabi.s3-website.us-east-2.amazonaws.com
+            Id: cloud-resume-yabi.s3-website.us-east-2.amazonaws.com
+            CustomOriginConfig: 
+              OriginProtocolPolicy: http-only
+        Enabled: true
+        DefaultRootObject: index.html
+        ViewerCertificate:
+          AcmCertificateArn: arn:aws:acm:us-east-1:897105211357:certificate/cccad9dc-8690-4e46-99ed-0acf46ae7ed1 #This is hardcoded because I made it through the console, but if I created in here.. I would simply reference the resource using !Ref <logical resource id> 
+          MinimumProtocolVersion: TLSv1.2_2021
+          SslSupportMethod: sni-only
+
+
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+    Properties:
+      CodeUri: hello_world/
+      Handler: app.lambda_handler
+      Runtime: python3.9
+      Architectures:
+        - x86_64
+      Events:
+        HelloWorld:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /hello
+            Method: get
+
+Outputs:
+  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
+  # Find out more about other implicit resources you can reference within SAM
+  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt HelloWorldFunction.Arn
+  HelloWorldFunctionIamRole:
+    Description: "Implicit IAM Role created for Hello World function"
+    Value: !GetAtt HelloWorldFunctionRole.Arn
