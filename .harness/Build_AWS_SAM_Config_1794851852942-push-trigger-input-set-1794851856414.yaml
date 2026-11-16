@@ -1,0 +1,14 @@
+inputSet:
+  name: Build_AWS_SAM_Config_1794851852942-push-trigger-input-set
+  identifier: Build_AWS_SAM_Config_1794851852942pushtriggerinputset
+  orgIdentifier: default
+  projectIdentifier: default_project
+  pipeline:
+    identifier: Build_AWS_SAM_Config_1794851852942
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.branch>
