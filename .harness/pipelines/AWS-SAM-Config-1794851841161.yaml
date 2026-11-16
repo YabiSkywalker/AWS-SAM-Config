@@ -1,0 +1,33 @@
+pipeline:
+  name: Build AWS-SAM-Config
+  identifier: Build_AWS_SAM_Config_1794851852942
+  projectIdentifier: default_project
+  orgIdentifier: default
+  stages:
+    - stage:
+        name: Build
+        identifier: Build
+        type: CI
+        spec:
+          cloneCodebase: true
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Echo Welcome Message
+                  identifier: Echo_Welcome_Message
+                  spec:
+                    shell: Sh
+                    command: echo "Welcome to Harness CI"
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: banderaserviceharnessng
+        repoName: AWS-SAM-Config
+        build: <+input>
