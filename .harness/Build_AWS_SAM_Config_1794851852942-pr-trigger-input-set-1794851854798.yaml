@@ -1,0 +1,14 @@
+inputSet:
+  name: Build_AWS_SAM_Config_1794851852942-pr-trigger-input-set
+  identifier: Build_AWS_SAM_Config_1794851852942prtriggerinputset
+  orgIdentifier: default
+  projectIdentifier: default_project
+  pipeline:
+    identifier: Build_AWS_SAM_Config_1794851852942
+    properties:
+      ci:
+        codebase:
+          build:
+            type: PR
+            spec:
+              number: <+trigger.prNumber>
